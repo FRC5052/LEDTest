@@ -8,9 +8,12 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.AddressableLEDSubsystem.AddressableLEDSlice;
 import frc.robot.subsystems.AddressableLEDSubsystem;
 import frc.robot.subsystems.DumbLEDSubsystem;
+
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -26,7 +29,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   
-  private final AddressableLEDSubsystem m_ledSubsystem = new AddressableLEDSubsystem();
+  private final AddressableLEDSubsystem m_ledSubsystem = new AddressableLEDSubsystem(0, 300);
   // private final DumbLEDSubsystem m_ledSubsystem = new DumbLEDSubsystem();
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
@@ -56,10 +59,26 @@ public class RobotContainer {
     // cancelling on release.
 
     Command controllerCommand = new Command() {
+      private AddressableLEDSlice firstHalf = m_ledSubsystem.createSlice(0, 150);
+      private AddressableLEDSlice secondHalf = m_ledSubsystem.createSlice(150, 150);
+      private Timer timer = new Timer();
+
+      @Override
+      public void initialize() {
+        timer.start();
+      }
 
       @Override
       public void execute() {
-        m_ledSubsystem.setDoubleRGBSine(5, 5, Color.fromHSV(4, 255, 255),  Color.fromHSV(60, 255, 255));
+        int partition = (int)(((Math.sin(timer.get()*Math.PI*0.25) * 0.25) + 0.5) * (double)m_ledSubsystem.length());
+        firstHalf.setLength(partition);
+        secondHalf.setLength(m_ledSubsystem.length()-partition);
+        secondHalf.setOffset(partition);
+        firstHalf.setDoubleRGBSine(timer, 5, 10, Color.fromHSV(4, 255, 255), Color.fromHSV(60, 255, 255));
+        secondHalf.setRainbow(timer);
+        m_ledSubsystem.display();
+        
+        // m_ledSubsystem.setDoubleRGBSine(5, 5, Color.fromHSV(4, 255, 255),  Color.fromHSV(60, 255, 255));
         // m_ledSubsystem.setAllLEDs(0,(int)(m_driverController.getRightTriggerAxis()*100), (int)(m_driverController.getLeftTriggerAxis()*100));
       };
     };

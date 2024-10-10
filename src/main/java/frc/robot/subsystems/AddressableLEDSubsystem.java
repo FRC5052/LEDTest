@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems;
 
+import java.util.function.DoubleFunction;
+
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.Timer;
@@ -12,77 +14,128 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class AddressableLEDSubsystem extends SubsystemBase {
-  AddressableLED led;
-  AddressableLEDBuffer ledBuffer;
-  Timer timer;
+  private final AddressableLED led;
+  private final AddressableLEDBuffer ledBuffer;
+  private final Timer timer;
 
-  public AddressableLEDSubsystem() {
+  public static class AddressableLEDSlice {
+    private final AddressableLEDSubsystem parent;
+    private int offset;
+    private int length;
+
+    private AddressableLEDSlice(AddressableLEDSubsystem parent, int offset, int length) {
+      this.parent = parent;
+      this.offset = offset;
+      this.length = length;
+    }
+
+    public int getOffset() {
+      return this.offset;
+    }
+
+    public void setOffset(int offset) {
+      // if (length+offset > parent.length()) {
+      //   throw new IndexOutOfBoundsException();
+      // }
+      this.offset = offset;
+    }
+
+    public int getLength() {
+      return this.length;
+    }
+
+    public void setLength(int length) {
+      // if (length+offset > parent.length()) {
+      //   throw new IndexOutOfBoundsException();
+      // }
+      this.length = length;
+    }
+
+    public void fill(Color color) {
+      for (int i = offset; i < length+offset; i++) {
+        parent.ledBuffer.setLED(i, color);
+      }
+    }
+    
+    public void setFunc(DoubleFunction<Color> func) {
+      for (int i = offset; i < length+offset; i++) {
+        double value = (((double)(i-offset))/(double)length);
+        parent.ledBuffer.setLED(i, func.apply(value));
+      }
+    }
+
+    public void setHueSine(Timer timer, int hue) {
+      this.setFunc((double value) -> {
+        return Color.fromHSV(hue, 255, (int)((Math.sin((value + (timer.get() / 5))*Math.PI*2*5)+1)*127));
+      });
+    }
+
+    public void setDoubleRGBSine(Timer timer, double speed, double frequency, Color color1, Color color2) {
+      this.setFunc((double value) -> {
+        double mult = (Math.sin((value + (timer.get() / speed))*Math.PI*2*frequency)+1)*0.5;
+        return new Color(
+          (color1.red*mult)+(color2.red*(1-mult)), 
+          (color1.green*mult)+(color2.green*(1-mult)), 
+          (color1.blue*mult)+(color2.blue*(1-mult))
+        );
+      });
+    }
+
+    public void setMeter(double threshold, Color onColor, Color offColor) {
+      this.setFunc((double value) -> {
+        if (value >= threshold) {
+          return offColor;
+        } else {
+          return onColor;
+        }
+      });
+    }
+
+    public void setMeter(double total, double position, Color onColor, Color offColor) {
+      this.setMeter(position/total, onColor, offColor);
+    }
+
+    public void setMeter(int total, int position, Color onColor, Color offColor) {
+      this.setMeter((double)total, (double)position, onColor, offColor);
+    }
+
+    public void setSpooky(Timer timer) {
+      this.setHueSine(timer, 4);
+    }
+
+    public void setRainbow(Timer timer) {
+      this.setFunc((double value) -> {
+        return Color.fromHSV((int)(((value + (timer.get() / 5)) % 1) * 180), 255, (int)((Math.sin((value + (timer.get() / 3))*Math.PI*2*5)+1)*127));
+      });
+    }
+    
+  }
+
+  public AddressableLEDSubsystem(int port, int length) {
     // PWM Port of LED
-    led = new AddressableLED(0);
+    led = new AddressableLED(port);
 
     // Length is expensive to set, so only set it once, then just update data
-    ledBuffer = new AddressableLEDBuffer(300);
+    ledBuffer = new AddressableLEDBuffer(length);
     led.setLength(ledBuffer.getLength());
 
-    // Set the data
-    led.setData(ledBuffer);
     led.start();
 
     timer = new Timer();
     timer.start();
   }
 
-  public void setAllLEDs(int r, int g, int b) {
-    for (int i = 0; i < ledBuffer.getLength(); i++) {
-      ledBuffer.setRGB(i, r, g, b);
-    }
-    led.setData(ledBuffer);
-  } 
-
-  public void setEven(int r, int g, int b) {
-    for (int i = 0; i < ledBuffer.getLength(); i++) {
-      ledBuffer.setRGB(i, r, g, b);
-    }
-    led.setData(ledBuffer);
-  } 
-
-  public void setHueSine(int hue) {
-    for (int i = 0; i < ledBuffer.getLength(); i++) {
-      double value = (((double)i)/(double)ledBuffer.getLength());
-      ledBuffer.setHSV(i, hue, 255, (int)((Math.sin((value + (timer.get() / 5))*Math.PI*2*5)+1)*127));
-    }
-    led.setData(ledBuffer);
+  public AddressableLEDSlice createSlice(int offset, int length) {
+    return new AddressableLEDSlice(this, offset, length);
   }
 
-  public void setDoubleRGBSine(double speed, double frequency, Color color1, Color color2) {
-    for (int i = 0; i < ledBuffer.getLength(); i++) {
-      double value = (((double)i)/(double)ledBuffer.getLength());
-      double mult = (Math.sin((value + (timer.get() / speed))*Math.PI*2*frequency)+1)*0.5;
-      ledBuffer.setLED(i, new Color(
-        (color1.red*mult)+(color2.red*(1-mult)), 
-        (color1.green*mult)+(color2.green*(1-mult)), 
-        (color1.blue*mult)+(color2.blue*(1-mult))
-      ));
-    }
-    led.setData(ledBuffer);
+  public void display() {
+    this.led.setData(this.ledBuffer);
   }
 
-  public void setSpooky() {
-    setHueSine(4);
+  public int length() {
+    return this.ledBuffer.getLength();
   }
-
-  public void setWomensHistoryMonth() {
-    setHueSine(175);
-  }
-
-  public void setLGBTQ() {
-    for (int i = 0; i < ledBuffer.getLength(); i++) {
-      double value = (((double)i)/(double)ledBuffer.getLength());
-      ledBuffer.setHSV(i, (int)(((value + (timer.get() / 5)) % 1) * 180), 255, (int)((Math.sin((value + (timer.get() / 3))*Math.PI*2*5)+1)*127));
-    }
-    led.setData(ledBuffer);
-  }
-
   
   /**
    * Example command factory method.
