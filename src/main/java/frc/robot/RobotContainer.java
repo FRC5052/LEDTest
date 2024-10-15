@@ -10,6 +10,7 @@ import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.AddressableLEDSubsystem.AddressableLEDSlice;
 import frc.robot.subsystems.AddressableLEDSubsystem;
+import frc.robot.subsystems.ColorSensorSubsystem;
 import frc.robot.subsystems.DumbLEDSubsystem;
 
 import edu.wpi.first.wpilibj.DriverStation;
@@ -30,6 +31,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   
   private final AddressableLEDSubsystem m_ledSubsystem = new AddressableLEDSubsystem(0, 300);
+  private final ColorSensorSubsystem m_colorSensorSubsystem = new ColorSensorSubsystem();
   // private final DumbLEDSubsystem m_ledSubsystem = new DumbLEDSubsystem();
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
@@ -59,27 +61,28 @@ public class RobotContainer {
     // cancelling on release.
 
     Command controllerCommand = new Command() {
-      private AddressableLEDSlice firstHalf = m_ledSubsystem.createSlice(0, 150);
-      private AddressableLEDSlice secondHalf = m_ledSubsystem.createSlice(150, 150);
-      private Timer timer = new Timer();
+      private AddressableLEDSlice ledStrip = m_ledSubsystem.createSlice(0, 300);
+      // private AddressableLEDSlice firstHalf = m_ledSubsystem.createSlice(0, 150);
+      // private AddressableLEDSlice secondHalf = m_ledSubsystem.createSlice(150, 150);
+      // private Timer timer = new Timer();
 
-      @Override
-      public void initialize() {
-        timer.start();
-      }
+      // @Override
+      // public void initialize() {
+      //   timer.start();
+      // }
 
       @Override
       public void execute() {
-        int partition = (int)(((Math.sin(timer.get()*Math.PI*0.25) * 0.25) + 0.5) * (double)m_ledSubsystem.length());
-        firstHalf.setLength(partition);
-        secondHalf.setLength(m_ledSubsystem.length()-partition);
-        secondHalf.setOffset(partition);
-        firstHalf.setDoubleRGBSine(timer, 5, 10, Color.fromHSV(4, 255, 255), Color.fromHSV(60, 255, 255));
-        secondHalf.setRainbow(timer);
+        // ledStrip.setColor(m_colorSensorSubsystem.getColor().red, m_colorSensorSubsystem.getColor().green, m_colorSensorSubsystem.getColor().blue);
+        ledStrip.setColor(m_colorSensorSubsystem.matchColor());
         m_ledSubsystem.display();
-        
-        // m_ledSubsystem.setDoubleRGBSine(5, 5, Color.fromHSV(4, 255, 255),  Color.fromHSV(60, 255, 255));
-        // m_ledSubsystem.setAllLEDs(0,(int)(m_driverController.getRightTriggerAxis()*100), (int)(m_driverController.getLeftTriggerAxis()*100));
+        // int partition = (int)(((Math.sin(timer.get()*Math.PI*0.25) * 0.25) + 0.5) * (double)m_ledSubsystem.length());
+        // firstHalf.setLength(partition);
+        // secondHalf.setLength(m_ledSubsystem.length()-partition);
+        // secondHalf.setOffset(partition);
+        // firstHalf.setDoubleRGBSine(timer, 5, 10, Color.fromHSV(4, 255, 255), Color.fromHSV(60, 255, 255));
+        // secondHalf.setRainbow(timer);
+        // m_ledSubsystem.display();
       };
     };
     controllerCommand.addRequirements(m_ledSubsystem);

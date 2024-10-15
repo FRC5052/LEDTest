@@ -58,6 +58,7 @@ public class AddressableLEDSubsystem extends SubsystemBase {
     }
     
     public void setFunc(DoubleFunction<Color> func) {
+      System.out.println(":)");
       for (int i = offset; i < length+offset; i++) {
         double value = (((double)(i-offset))/(double)length);
         parent.ledBuffer.setLED(i, func.apply(value));
@@ -108,7 +109,17 @@ public class AddressableLEDSubsystem extends SubsystemBase {
         return Color.fromHSV((int)(((value + (timer.get() / 5)) % 1) * 180), 255, (int)((Math.sin((value + (timer.get() / 3))*Math.PI*2*5)+1)*127));
       });
     }
-    
+    public void setColor(double r, double g, double b) {
+      this.setFunc((double value) -> {
+        return new Color(r,g,b);      
+      });
+    }
+
+    public void setColor(Color color) {
+      this.setFunc((double value) -> {
+        return color;      
+      });
+    }
   }
 
   public AddressableLEDSubsystem(int port, int length) {
