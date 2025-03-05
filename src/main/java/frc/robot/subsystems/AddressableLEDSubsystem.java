@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class AddressableLEDSubsystem extends SubsystemBase {
   private final AddressableLED led;
   private final AddressableLEDBuffer ledBuffer;
-  private final Timer timer;
+  private final Color colorCorrection = new Color(1.0, 1.0, 1.0);
 
   public static class AddressableLEDSlice {
     private final AddressableLEDSubsystem parent;
@@ -53,15 +53,14 @@ public class AddressableLEDSubsystem extends SubsystemBase {
 
     public void fill(Color color) {
       for (int i = offset; i < length+offset; i++) {
-        parent.ledBuffer.setLED(i, color);
+        parent.set(i, color);
       }
     }
     
     public void setFunc(DoubleFunction<Color> func) {
-      System.out.println(":)");
       for (int i = offset; i < length+offset; i++) {
         double value = (((double)(i-offset))/(double)length);
-        parent.ledBuffer.setLED(i, func.apply(value));
+        parent.set(i, func.apply(value));
       }
     }
 
@@ -114,12 +113,6 @@ public class AddressableLEDSubsystem extends SubsystemBase {
         return new Color(r,g,b);      
       });
     }
-
-    public void setColor(Color color) {
-      this.setFunc((double value) -> {
-        return color;      
-      });
-    }
   }
 
   public AddressableLEDSubsystem(int port, int length) {
@@ -131,13 +124,23 @@ public class AddressableLEDSubsystem extends SubsystemBase {
     led.setLength(ledBuffer.getLength());
 
     led.start();
+  }
 
-    timer = new Timer();
-    timer.start();
+  private void set(int index, Color color) {
+    this.ledBuffer.setRGB(
+      index, 
+      (int)(Math.min(color.red*colorCorrection.red, 1.0) * 255), 
+      (int)(Math.min(color.green*colorCorrection.green, 1.0) * 255), 
+      (int)(Math.min(color.blue*colorCorrection.blue, 1.0) * 255)
+    );
   }
 
   public AddressableLEDSlice createSlice(int offset, int length) {
     return new AddressableLEDSlice(this, offset, length);
+  }
+
+  public AddressableLEDSlice createSlice() {
+    return this.createSlice(0, this.length());
   }
 
   public void display() {

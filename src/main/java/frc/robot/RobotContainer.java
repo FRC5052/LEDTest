@@ -13,11 +13,12 @@ import frc.robot.subsystems.AddressableLEDSubsystem;
 import frc.robot.subsystems.ColorSensorSubsystem;
 import frc.robot.subsystems.DumbLEDSubsystem;
 
+import com.revrobotics.ColorSensorV3.RawColor;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -61,9 +62,9 @@ public class RobotContainer {
     // cancelling on release.
 
     Command controllerCommand = new Command() {
-      private AddressableLEDSlice ledStrip = m_ledSubsystem.createSlice(0, 300);
-      // private AddressableLEDSlice firstHalf = m_ledSubsystem.createSlice(0, 150);
-      // private AddressableLEDSlice secondHalf = m_ledSubsystem.createSlice(150, 150);
+      // private AddressableLEDSlice ledStrip = m_ledSubsystem.createSlice(0, 300);
+      private AddressableLEDSlice firstHalf = m_ledSubsystem.createSlice(0, 10);
+      private AddressableLEDSlice secondHalf = m_ledSubsystem.createSlice(10, 10);
       // private Timer timer = new Timer();
 
       // @Override
@@ -74,7 +75,12 @@ public class RobotContainer {
       @Override
       public void execute() {
         // ledStrip.setColor(m_colorSensorSubsystem.getColor().red, m_colorSensorSubsystem.getColor().green, m_colorSensorSubsystem.getColor().blue);
-        ledStrip.setColor(m_colorSensorSubsystem.matchColor());
+        Color color = m_colorSensorSubsystem.getColor();
+        // RawColor rawColor = m_colorSensorSubsystem.getRawColor();
+        Color matchedColor = m_colorSensorSubsystem.getMatchedColor();
+        // System.out.println("" + rawColor.red + " " + rawColor.green + " " + rawColor.blue);
+        firstHalf.fill(color);
+        secondHalf.fill(matchedColor.equals(Color.kOrange) ? Color.kGreen : Color.kBlack);
         m_ledSubsystem.display();
         // int partition = (int)(((Math.sin(timer.get()*Math.PI*0.25) * 0.25) + 0.5) * (double)m_ledSubsystem.length());
         // firstHalf.setLength(partition);
